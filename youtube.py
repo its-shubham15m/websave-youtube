@@ -50,12 +50,10 @@ def get_video_info(url):
         st.error(f"An error occurred: {e}")
         return None, None
 
-
 def resize_thumbnail(thumbnail_url):
     response = requests.get(thumbnail_url)
     img = Image.open(BytesIO(response.content))
     return img
-
 
 # Check if a URL is provided
 if url:
@@ -77,7 +75,8 @@ if url:
                 video_data = io.BytesIO()
                 selected_stream.stream_to_buffer(video_data)
                 video_data.seek(0)
-                st.download_button(label=f"Download", key=f"{yt.title}.mp4", data=video_data, file_name=f"{yt.title}.mp4")
+                if st.button("Download Video"):
+                    st.download_button(label="Click to Download", key=f"{yt.title}.mp4", data=video_data, file_name=f"{yt.title}.mp4")
         else:
             audio_streams = yt.streams.filter(only_audio=True, file_extension='mp4')
 
@@ -86,18 +85,45 @@ if url:
             audio_quality = st.selectbox("Select audio quality:", audio_quality_choices)
             selected_audio_stream = next((audio_stream for audio_stream in audio_streams if audio_quality in audio_stream.abr), None)
             if selected_audio_stream:
-                download_url = selected_audio_stream.url
-                st.subheader("Download Audio:")
-                st.markdown(f'<a href="{download_url}" download>Click to Download</a>', unsafe_allow_html=True)
+                audio_data = io.BytesIO()
+                selected_audio_stream.stream_to_buffer(audio_data)
+                audio_data.seek(0)
+                if st.button("Download Audio"):
+                    st.download_button(label="Click to Download", key=f"{yt.title}.mp3", data=audio_data, file_name=f"{yt.title}.mp3")
             else:
                 st.warning("No audio stream available for the selected quality.")
 
 # Contact developer
-if st.button("Contact Me"):
-    email = "shubhamgupta15m@gmail.com"
-    subject = "WebSave Inquiry"
-    mailto_link = f"<a href='mailto:{email}?subject={subject}'>Contact Developer</a>"
-    st.markdown(mailto_link, unsafe_allow_html=True)
+email = "shubhamgupta15m@gmail.com"
+subject = "WebSave Inquiry"
+mailto_link = f"mailto:{email}?subject={subject}"
+
+# Apply CSS to style the link as a button
+st.write(
+    f'<a href="{mailto_link}" class="contact-button">Contact Developer</a>',
+    unsafe_allow_html=True
+)
+
+# Define the CSS style for the button
+st.markdown(
+    """
+    <style>
+    .contact-button {
+        background-color: #262730;
+        color: white !important;
+        padding: 5px 10px;
+        text-align: center;
+        text-decoration: none !important;
+        display: inline-block;
+        font-size: 18px;
+        margin: 4px 2px;
+        cursor: pointer;
+        border-radius: 4px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 # Add a footer
 st.markdown("Made with ❤️ by **Shubham Gupta**")
