@@ -67,6 +67,10 @@ def extract_video_title(url):
             return data.get("title")
     return None
 
+# Generate a default filename
+def get_default_filename():
+    return "video"
+
 # Check if a URL is provided
 if url:
     with st.spinner("Fetching video information..."):
@@ -95,10 +99,12 @@ if url:
                 # Set the download link with the video title as the filename
                 video_title = extract_video_title(url)
                 if video_title:
-                    st.subheader("Download Video:")
-                    st.markdown(f'<a href="{download_url}" download="{video_title}.mp4">Click to Download</a>', unsafe_allow_html=True)
+                    filename = f"{video_title}.mp4"
                 else:
-                    st.warning("Video title not available, unable to set filename.")
+                    filename = f"{get_default_filename()}.mp4"
+
+                st.subheader("Download Video:")
+                st.markdown(f'<a href="{download_url}" download="{filename}">Click to Download</a>', unsafe_allow_html=True)
 
         if download_option == "Audio":
             audio_streams = yt.streams.filter(only_audio=True, file_extension='mp4')
@@ -114,12 +120,12 @@ if url:
                 # Set the download link with the video title as the filename
                 video_title = extract_video_title(url)
                 if video_title:
-                    st.subheader("Download Audio:")
-                    st.markdown(f'<a href="{download_url}" download="{video_title}.mp4">Click to Download</a>', unsafe_allow_html=True)
+                    filename = f"{video_title}.mp4"
                 else:
-                    st.warning("Video title not available, unable to set filename.")
-            else:
-                st.warning("No audio stream available for the selected quality.")
+                    filename = f"{get_default_filename()}.mp4"
+
+                st.subheader("Download Audio:")
+                st.markdown(f'<a href="{download_url}" download="{filename}">Click to Download</a>', unsafe_allow_html=True)
 
 # Add a footer
 st.markdown("Made with ❤️ by Shubham Gupta")
