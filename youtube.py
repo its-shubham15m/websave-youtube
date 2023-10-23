@@ -103,7 +103,7 @@ if url:
                     st.markdown(f'<a href="{download_url}" download>Click to Download</a>', unsafe_allow_html=True)
                 else:
                     st.warning("No audio stream available for the selected quality.")
-c1, c2 = st.columns([1, 2], gap="small")
+c1, c2 = st.columns([1, 1])
 with c1:
     st_lottie(
             lottie_coding,
