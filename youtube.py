@@ -75,8 +75,7 @@ if url:
                 video_data = io.BytesIO()
                 selected_stream.stream_to_buffer(video_data)
                 video_data.seek(0)
-                if st.button("Download Video"):
-                    st.download_button(label="Click to Download", key=f"{yt.title}.mp4", data=video_data, file_name=f"{yt.title}.mp4")
+                st.download_button(label="Click to Download", key=f"{yt.title}.mp4", data=video_data, file_name=f"{yt.title}.mp4")
         else:
             audio_streams = yt.streams.filter(only_audio=True, file_extension='mp4')
 
@@ -88,8 +87,7 @@ if url:
                 audio_data = io.BytesIO()
                 selected_audio_stream.stream_to_buffer(audio_data)
                 audio_data.seek(0)
-                if st.button("Download Audio"):
-                    st.download_button(label="Click to Download", key=f"{yt.title}.mp3", data=audio_data, file_name=f"{yt.title}.mp3")
+                st.download_button(label="Click to Download", key=f"{yt.title}.mp3", data=audio_data, file_name=f"{yt.title}.mp3")
             else:
                 st.warning("No audio stream available for the selected quality.")
 
