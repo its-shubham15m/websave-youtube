@@ -75,7 +75,6 @@ if url:
                 selected_stream_index = stream_options.index(selected_stream_option)
                 selected_stream = video_streams[selected_stream_index]
                 video_data = io.BytesIO()
-                selected_stream.stream_to_buffer(video_data)
                 video_data.seek(0)
                 st.download_button(label=f"Click to Download {yt.title}.mp4", key=f"{yt.title}.mp4", data=video_data, file_name=f"{yt.title}.mp4")
         else:
@@ -93,11 +92,11 @@ if url:
                 st.warning("No audio stream available for the selected quality.")
 
 # Contact developer
-if st.button("Contact Developer"):
+if st.button("Contact Me"):
     email = "shubhamgupta15m@gmail.com"
     subject = "WebSave Inquiry"
     mailto_link = f"<a href='mailto:{email}?subject={subject}'>Contact Developer</a>"
     st.markdown(mailto_link, unsafe_allow_html=True)
 
 # Add a footer
-st.markdown("Made with ❤️ by Shubham Gupta")
+st.markdown("Made with ❤️ by **Shubham Gupta**")
