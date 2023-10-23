@@ -3,6 +3,7 @@ from pytube import YouTube
 from PIL import Image
 import requests
 from io import BytesIO
+import re
 
 st.set_page_config(
     page_title="WebSave - YouTube",
@@ -21,7 +22,7 @@ st.markdown(
         background-size: cover;
         background-position: center;
     }}
-    
+
     .thumbnail-container {{
         border-radius: 10px;
         overflow: hidden;
@@ -39,6 +40,7 @@ st.markdown(
 # Input field for the YouTube URL
 url = st.text_input("Enter the YouTube URL:")
 
+
 @st.cache_data
 def get_video_info(url):
     try:
@@ -49,10 +51,25 @@ def get_video_info(url):
         st.error(f"An error occurred: {e}")
         return None, None
 
+
 def resize_thumbnail(thumbnail_url):
     response = requests.get(thumbnail_url)
     img = Image.open(BytesIO(response.content))
     return img
+
+
+# Function to extract the video title from the URL
+def extract_video_title(url):
+    match = re.search(r"v=([^&]+)", url)
+    if match:
+        video_id = match.group(1)
+        info_url = f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={video_id}&format=json"
+        response = requests.get(info_url)
+        if response.status_code == 200:
+            data = response.json()
+            return data.get("title")
+    return None
+
 
 # Check if a URL is provided
 if url:
@@ -72,11 +89,14 @@ if url:
 
             # Generate a direct download link for the selected stream
             stream_options = [f"{stream.resolution} - {stream.mime_type} - {stream.itag}" for stream in video_streams]
-            selected_stream_option = st.selectbox("Select a video stream to generate a direct download link:", stream_options)
+            selected_stream_option = st.selectbox("Select a video stream to generate a direct download link:",
+                                                  stream_options)
             if selected_stream_option:
                 selected_stream_index = stream_options.index(selected_stream_option)
                 selected_stream = video_streams[selected_stream_index]
                 download_url = selected_stream.url
+
+                # Set the download link without specifying a filename
                 st.subheader("Download Video:")
                 st.markdown(f'<a href="{download_url}" download>Click to Download</a>', unsafe_allow_html=True)
 
@@ -86,16 +106,14 @@ if url:
             # Generate audio quality choices dynamically
             audio_quality_choices = [f"{audio_stream.abr.replace('kbps', '')}kbps" for audio_stream in audio_streams]
             audio_quality = st.selectbox("Select audio quality:", audio_quality_choices)
+            selected_audio_stream = next(
+                (audio_stream for audio_stream in audio_streams if audio_quality in audio_stream.abr), None)
+            if selected_audio_stream:
+                download_url = selected_audio_stream.url
 
-            if st.button("Download Audio"):
-                # Find the audio stream for the selected quality
-                selected_audio_stream = next((audio_stream for audio_stream in audio_streams if audio_quality in audio_stream.abr), None)
-                if selected_audio_stream:
-                    download_url = selected_audio_stream.url
-                    st.subheader("Download Audio:")
-                    st.markdown(f'<a href="{download_url}" download>Click to Download</a>', unsafe_allow_html=True)
-                else:
-                    st.warning("No audio stream available for the selected quality.")
+                # Set the download link without specifying a filename
+                st.subheader("Download Audio:")
+                st.markdown(f'<a href="{download_url}" download>Click to Download</a>', unsafe_allow_html=True)
 
 # Add a footer
 st.markdown("Made with ❤️ by Shubham Gupta")
