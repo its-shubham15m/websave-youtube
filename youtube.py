@@ -40,7 +40,6 @@ st.markdown(
 # Input field for the YouTube URL
 url = st.text_input("Enter the YouTube URL:")
 
-
 @st.cache_data
 def get_video_info(url):
     try:
@@ -51,12 +50,10 @@ def get_video_info(url):
         st.error(f"An error occurred: {e}")
         return None, None
 
-
 def resize_thumbnail(thumbnail_url):
     response = requests.get(thumbnail_url)
     img = Image.open(BytesIO(response.content))
     return img
-
 
 # Function to extract the video title from the URL
 def extract_video_title(url):
@@ -69,7 +66,6 @@ def extract_video_title(url):
             data = response.json()
             return data.get("title")
     return None
-
 
 # Check if a URL is provided
 if url:
@@ -96,9 +92,13 @@ if url:
                 selected_stream = video_streams[selected_stream_index]
                 download_url = selected_stream.url
 
-                # Set the download link without specifying a filename
-                st.subheader("Download Video:")
-                st.markdown(f'<a href="{download_url}" download>Click to Download</a>', unsafe_allow_html=True)
+                # Set the download link with the video title as the filename
+                video_title = extract_video_title(url)
+                if video_title:
+                    st.subheader("Download Video:")
+                    st.markdown(f'<a href="{download_url}" download="{video_title}.mp4">Click to Download</a>', unsafe_allow_html=True)
+                else:
+                    st.warning("Video title not available, unable to set filename.")
 
         if download_option == "Audio":
             audio_streams = yt.streams.filter(only_audio=True, file_extension='mp4')
@@ -111,9 +111,15 @@ if url:
             if selected_audio_stream:
                 download_url = selected_audio_stream.url
 
-                # Set the download link without specifying a filename
-                st.subheader("Download Audio:")
-                st.markdown(f'<a href="{download_url}" download>Click to Download</a>', unsafe_allow_html=True)
+                # Set the download link with the video title as the filename
+                video_title = extract_video_title(url)
+                if video_title:
+                    st.subheader("Download Audio:")
+                    st.markdown(f'<a href="{download_url}" download="{video_title}.mp4">Click to Download</a>', unsafe_allow_html=True)
+                else:
+                    st.warning("Video title not available, unable to set filename.")
+            else:
+                st.warning("No audio stream available for the selected quality.")
 
 # Add a footer
 st.markdown("Made with ❤️ by Shubham Gupta")
