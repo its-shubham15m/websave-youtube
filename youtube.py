@@ -75,8 +75,9 @@ if url:
                 selected_stream_index = stream_options.index(selected_stream_option)
                 selected_stream = video_streams[selected_stream_index]
                 video_data = io.BytesIO()
+                selected_stream.stream_to_buffer(video_data)
                 video_data.seek(0)
-                st.download_button(label=f"Click to Download {yt.title}.mp4", key=f"{yt.title}.mp4", data=video_data, file_name=f"{yt.title}.mp4")
+                st.download_button(label=f"Download", key=f"{yt.title}.mp4", data=video_data, file_name=f"{yt.title}.mp4")
         else:
             audio_streams = yt.streams.filter(only_audio=True, file_extension='mp4')
 
