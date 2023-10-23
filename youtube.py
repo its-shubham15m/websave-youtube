@@ -40,9 +40,6 @@ st.markdown(
 # Input field for the YouTube URL
 url = st.text_input("Enter the YouTube URL:")
 
-download_format = st.radio("Select Download Format:", ["MP4 (Video)", "MP3 (Audio)"])
-
-
 @st.cache_data
 def get_video_info(url):
     try:
@@ -69,39 +66,31 @@ if url:
         st.subheader("Video Thumbnail:")
         thumbnail = resize_thumbnail(thumbnail_url)
         st.image(thumbnail, use_column_width=True, caption="Video Thumbnail", output_format='JPEG', channels="BGR")
-        try:
-            if "MP4" in download_format:
-                video_streams = yt.streams.filter(progressive=True, file_extension="mp4").order_by(
-                    'resolution').desc()
-                stream_options = [f"{stream.resolution} - {stream.mime_type}" for stream in
-                                  video_streams]
-                selected_stream_option = st.selectbox("Select a video stream to generate a direct download link:",
-                                                      stream_options)
-                if selected_stream_option:
-                    selected_stream_index = stream_options.index(selected_stream_option)
-                    selected_stream = video_streams[selected_stream_index]
-                    video_data = io.BytesIO()
-                    selected_stream.stream_to_buffer(video_data)
-                    video_data.seek(0)
-                    st.download_button(label=f"Click to Download {yt.title}.mp4", key=f"{yt.title}.mp4",
-                                       data=video_data, file_name=f"{yt.title}.mp4")
-            else:
-                audio_streams = yt.streams.filter(only_audio=True, file_extension='mp4')
+        download_format = st.radio("Select Download Format:", ["MP4 (Video)", "MP3 (Audio)"])
+        if "MP4" in download_format:
+            video_streams = yt.streams.filter(progressive=True, file_extension="mp4").order_by('resolution').desc()
+            stream_options = [f"{stream.resolution} - {stream.mime_type}" for stream in video_streams]
+            selected_stream_option = st.selectbox("Select a video stream to generate a direct download link:", stream_options)
+            if selected_stream_option:
+                selected_stream_index = stream_options.index(selected_stream_option)
+                selected_stream = video_streams[selected_stream_index]
+                video_data = io.BytesIO()
+                selected_stream.stream_to_buffer(video_data)
+                video_data.seek(0)
+                st.download_button(label=f"Click to Download {yt.title}.mp4", key=f"{yt.title}.mp4", data=video_data, file_name=f"{yt.title}.mp4")
+        else:
+            audio_streams = yt.streams.filter(only_audio=True, file_extension='mp4')
 
-                # Generate audio quality choices dynamically
-                audio_quality_choices = [f"{audio_stream.abr.replace('kbps', '')}kbps" for audio_stream in
-                                         audio_streams]
-                audio_quality = st.selectbox("Select audio quality:", audio_quality_choices)
-                selected_audio_stream = next(
-                    (audio_stream for audio_stream in audio_streams if audio_quality in audio_stream.abr), None)
-                if selected_audio_stream:
-                    download_url = selected_audio_stream.url
-                    st.subheader("Download Audio:")
-                    st.markdown(f'<a href="{download_url}" download>Click to Download</a>', unsafe_allow_html=True)
-                else:
-                    st.warning("No audio stream available for the selected quality.")
-        except Exception as e:
-            st.error(f"An error occurred: {str(e)}")
+            # Generate audio quality choices dynamically
+            audio_quality_choices = [f"{audio_stream.abr.replace('kbps', '')}kbps" for audio_stream in audio_streams]
+            audio_quality = st.selectbox("Select audio quality:", audio_quality_choices)
+            selected_audio_stream = next((audio_stream for audio_stream in audio_streams if audio_quality in audio_stream.abr), None)
+            if selected_audio_stream:
+                download_url = selected_audio_stream.url
+                st.subheader("Download Audio:")
+                st.markdown(f'<a href="{download_url}" download>Click to Download</a>', unsafe_allow_html=True)
+            else:
+                st.warning("No audio stream available for the selected quality.")
 
 # Contact developer
 if st.button("Contact Developer"):
