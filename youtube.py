@@ -4,7 +4,6 @@ from PIL import Image
 import requests
 from io import BytesIO
 import io
-from moviepy.editor import VideoFileClip
 from mutagen.id3 import ID3, APIC, TIT2, TPE1, TDRC, TCON, TALB
 import os
 
@@ -90,12 +89,11 @@ def create_video_with_thumbnail(yt, video_data, thumbnail_img):
         f.write(video_data.read())
 
     # Embed thumbnail as cover
-    yt_thumbnail = yt.thumbnail_url
-    video = VideoFileClip(video_path)
-    video = video.set_duration(yt.length)
-    video = video.set_audio(VideoFileClip(video_path).audio)
-    video = video.set_thumbnail(yt_thumbnail)
-    video.write_videofile(video_path)
+    thumbnail_img = thumbnail_img.convert('RGB')  # Ensure the image is in RGB mode
+    thumbnail_img.save(f'{video_path}.jpg')
+    os.system(f'ffmpeg -i "{video_path}" -i "{video_path}.jpg" -map 0 -map 1 -c copy -c:v:1 jpeg -disposition:v:1 attached_pic "{video_path}.temp.mp4"')
+    os.rename(f'{video_path}.temp.mp4', video_path)
+
     return video_path
 
 # Check if a URL is provided
