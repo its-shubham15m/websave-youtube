@@ -108,8 +108,29 @@ if url:
         thumbnail = resize_thumbnail(thumbnail_url)
         st.image(thumbnail, use_column_width=True, caption="Video Thumbnail", output_format='JPEG', channels="BGR")
 
-        download_format = st.radio("Select Download Format:", ["MP4 (Video)", "MP3 (Audio)"])
-        if "MP4" in download_format:
+        download_format = st.radio("Select Download Format:", ["MP3 (Audio)", "MP4 (Video)"])  # Reversed the order
+
+        if "MP3" in download_format:
+            # Filter both MP3 and MP4 audio streams
+            audio_streams_mp3 = yt.streams.filter(only_audio=True, file_extension='mp3')
+            audio_streams_mp4 = yt.streams.filter(only_audio=True, file_extension='mp4')
+            audio_streams = audio_streams_mp3 + audio_streams_mp4
+
+            # Generate audio quality choices dynamically
+            audio_quality_choices = [f"{audio_stream.abr.replace('kbps', '')}kbps" for audio_stream in audio_streams]
+            audio_quality = st.selectbox("Select audio quality:", audio_quality_choices)
+            selected_audio_stream = next((audio_stream for audio_stream in audio_streams if audio_quality in audio_stream.abr), None)
+            if selected_audio_stream:
+                audio_data = io.BytesIO()
+                selected_audio_stream.stream_to_buffer(audio_data)
+                audio_data.seek(0)
+
+                # Create audio file with metadata
+                audio_path = create_audio_with_metadata(yt, thumbnail, audio_data)
+                st.audio(audio_path, format='audio/mp3', start_time=0, key=f"{yt.title}.mp3")
+            else:
+                st.warning("No audio stream available for the selected quality.")
+        else:
             video_streams = yt.streams.filter(progressive=True, file_extension="mp4").order_by('resolution').desc()
             selected_video_stream = video_streams[0]
             video_data = io.BytesIO()
@@ -118,18 +139,6 @@ if url:
             # Create video file with thumbnail as cover
             video_path = create_video_with_thumbnail(yt, video_data, thumbnail)
             st.video(video_path)
-        else:
-            if audio_streams:
-                selected_audio_stream = audio_streams[0]  # Get the first stream with desired audio quality
-                audio_data = io.BytesIO()
-                selected_audio_stream.stream_to_buffer(audio_data)
-
-                # Create audio file with metadata
-                audio_path = create_audio_with_metadata(yt, thumbnail, audio_data)
-                st.audio(audio_path, format='audio/mp3', start_time=0, key=f"{yt.title}.mp3")
-
-            else:
-                st.warning(f"No {desired_audio_quality} audio stream available.")
 
 # Contact developer
 email = "shubhamgupta15m@gmail.com"
