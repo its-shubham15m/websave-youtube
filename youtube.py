@@ -4,8 +4,6 @@ from PIL import Image
 import requests
 from io import BytesIO
 import io
-from mutagen.id3 import ID3, APIC, TIT2, TPE1, TDRC, TCON, TALB
-import os
 
 st.set_page_config(
     page_title="WebSave - YouTube",
@@ -57,45 +55,6 @@ def resize_thumbnail(thumbnail_url):
     img = Image.open(BytesIO(response.content))
     return img
 
-# Function to create audio file with metadata
-def create_audio_with_metadata(yt, thumbnail_img, audio_data):
-    audio = ID3()
-
-    # Set album cover (thumbnail)
-    audio.add(APIC(3, 'image/jpeg', 3, 'Front cover', thumbnail_img.tobytes()))
-
-    # Set audio metadata
-    audio["title"] = yt.title
-    audio["artist"] = yt.author
-    audio["date"] = str(yt.publish_date.year)
-    audio["genre"] = "YouTube"
-    audio["album"] = yt.title
-
-    # Save audio with metadata
-    audio_filename = f"{yt.title}.mp3"
-    audio_path = os.path.join(".", audio_filename)
-    audio_data.seek(0)
-    with open(audio_path, "wb") as f:
-        f.write(audio_data.read())
-    audio.save(audio_path)
-    return audio_path
-
-# Function to create video file with thumbnail as cover
-def create_video_with_thumbnail(yt, video_data, thumbnail_img):
-    video_filename = f"{yt.title}.mp4"
-    video_path = os.path.join(".", video_filename)
-    video_data.seek(0)
-    with open(video_path, "wb") as f:
-        f.write(video_data.read())
-
-    # Embed thumbnail as cover
-    thumbnail_img = thumbnail_img.convert('RGB')  # Ensure the image is in RGB mode
-    thumbnail_img.save(f'{video_path}.jpg')
-    os.system(f'ffmpeg -i "{video_path}" -i "{video_path}.jpg" -map 0 -map 1 -c copy -c:v:1 jpeg -disposition:v:1 attached_pic "{video_path}.temp.mp4"')
-    os.rename(f'{video_path}.temp.mp4', video_path)
-
-    return video_path
-
 # Check if a URL is provided
 if url:
     with st.spinner("Fetching video information..."):
@@ -105,42 +64,64 @@ if url:
         st.subheader("Video Thumbnail:")
         thumbnail = resize_thumbnail(thumbnail_url)
         st.image(thumbnail, use_column_width=True, caption="Video Thumbnail", output_format='JPEG', channels="BGR")
-
-        download_format = st.radio("Select Download Format:", ["MP3 (Audio)", "MP4 (Video)"])  # Reversed the order
-
-        if "MP3" in download_format:
-            try:
-                # Filter both MP3 and MP4 audio streams
-                audio_streams_mp3 = yt.streams.filter(only_audio=True, file_extension='mp3')
-                audio_streams_mp4 = yt.streams.filter(only_audio=True, file_extension='mp4')
-                audio_streams = audio_streams_mp3 + audio_streams_mp4
-
-                # Generate audio quality choices dynamically
-                audio_quality_choices = [f"{audio_stream.abr.replace('kbps', '')}kbps" for audio_stream in audio_streams]
-                audio_quality = st.selectbox("Select audio quality:", audio_quality_choices)
-                selected_audio_stream = next((audio_stream for audio_stream in audio_streams if audio_quality in audio_stream.abr), None)
-                if selected_audio_stream:
-                    audio_data = io.BytesIO()
-                    selected_audio_stream.stream_to_buffer(audio_data)
-                    audio_data.seek(0)
-
-                    # Create audio file with metadata
-                    audio_path = create_audio_with_metadata(yt, thumbnail, audio_data)
-                    st.audio(audio_path, format='audio/mp3', start_time=0, key=f"{yt.title}.mp3")
-                else:
-                    st.warning("No audio stream available for the selected quality.")
-            except Exception as e:
-                st.error(f"An error occurred: {e}")
-        else:
-            try:
-                video_streams = yt.streams.filter(progressive=True, file_extension="mp4").order_by('resolution').desc()
-                selected_video_stream = video_streams[0]
+        download_format = st.radio("Select Download Format:", ["MP4 (Video)", "MP3 (Audio)"])
+        if "MP4" in download_format:
+            video_streams = yt.streams.filter(progressive=True, file_extension="mp4").order_by('resolution').desc()
+            stream_options = [f"{stream.resolution} - {stream.mime_type}" for stream in video_streams]
+            selected_stream_option = st.selectbox("Select a video stream to generate a direct download link:", stream_options)
+            if selected_stream_option:
+                selected_stream_index = stream_options.index(selected_stream_option)
+                selected_stream = video_streams[selected_stream_index]
                 video_data = io.BytesIO()
-                selected_video_stream.stream_to_buffer(video_data)
+                selected_stream.stream_to_buffer(video_data)
+                video_data.seek(0)
+                st.download_button(label="Click to Download", key=f"{yt.title}.mp4", data=video_data, file_name=f"{yt.title}.mp4")
+        else:
+            audio_streams = yt.streams.filter(only_audio=True, file_extension='mp4')
 
-                # Create video file with thumbnail as cover
-                video_path = create_video_with_thumbnail(yt, video_data, thumbnail)
-                st.video(video_path)
-            except Exception as e:
-                st.error(f"An error occurred: {e}")
-        st.info("Please note that the video may be unavailable or blocked by YouTube.")
+            # Generate audio quality choices dynamically
+            audio_quality_choices = [f"{audio_stream.abr.replace('kbps', '')}kbps" for audio_stream in audio_streams]
+            audio_quality = st.selectbox("Select audio quality:", audio_quality_choices)
+            selected_audio_stream = next((audio_stream for audio_stream in audio_streams if audio_quality in audio_stream.abr), None)
+            if selected_audio_stream:
+                audio_data = io.BytesIO()
+                selected_audio_stream.stream_to_buffer(audio_data)
+                audio_data.seek(0)
+                st.download_button(label="Click to Download", key=f"{yt.title}.mp3", data=audio_data, file_name=f"{yt.title}.mp3")
+            else:
+                st.warning("No audio stream available for the selected quality.")
+
+# Contact developer
+email = "shubhamgupta15m@gmail.com"
+subject = "WebSave Inquiry"
+mailto_link = f"mailto:{email}?subject={subject}"
+
+# Apply CSS to style the link as a button
+st.write(
+    f'<a href="{mailto_link}" class="contact-button">Contact Developer</a>',
+    unsafe_allow_html=True
+)
+
+# Define the CSS style for the button
+st.markdown(
+    """
+    <style>
+    .contact-button {
+        background-color: #262730;
+        color: white !important;
+        padding: 5px 10px;
+        text-align: center;
+        text-decoration: none !important;
+        display: inline-block;
+        font-size: 18px;
+        margin: 4px 2px;
+        cursor: pointer;
+        border-radius: 4px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# Add a footer
+st.markdown("Made with ❤️ by *Shubham Gupta*")
