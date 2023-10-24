@@ -143,38 +143,4 @@ if url:
                 st.video(video_path)
             except Exception as e:
                 st.error(f"An error occurred: {e}")
-
-# Contact developer
-email = "shubhamgupta15m@gmail.com"
-subject = "WebSave Inquiry"
-mailto_link = f"mailto:{email}?subject={subject}"
-
-# Apply CSS to style the link as a button
-st.write(
-    f'<a href="{mailto_link}" class="contact-button">Contact Developer</a>',
-    unsafe_allow_html=True
-)
-
-# Define the CSS style for the button
-st.markdown(
-    """
-    <style>
-    .contact-button {
-        background-color: #262730;
-        color: white !important;
-        padding: 5px 10px;
-        text-align: center;
-        text-decoration: none !important;
-        display: inline-block;
-        font-size: 18px;
-        margin: 4px 2px;
-        cursor: pointer;
-        border-radius: 4px;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-# Add a footer
-st.markdown("Made with ❤️ by **Shubham Gupta**")
+        st.info("Please note that the video may be unavailable or blocked by YouTube.")
