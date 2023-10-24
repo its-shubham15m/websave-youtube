@@ -4,6 +4,9 @@ from PIL import Image
 import requests
 from io import BytesIO
 import io
+from moviepy.editor import VideoFileClip
+from mutagen.id3 import ID3, APIC, TIT2, TPE1, TDRC, TCON, TALB
+import os
 
 st.set_page_config(
     page_title="WebSave - YouTube",
@@ -55,6 +58,46 @@ def resize_thumbnail(thumbnail_url):
     img = Image.open(BytesIO(response.content))
     return img
 
+# Function to create audio file with metadata
+def create_audio_with_metadata(yt, thumbnail_img, audio_data):
+    audio = ID3()
+
+    # Set album cover (thumbnail)
+    audio.add(APIC(3, 'image/jpeg', 3, 'Front cover', thumbnail_img.tobytes()))
+
+    # Set audio metadata
+    audio["title"] = yt.title
+    audio["artist"] = yt.author
+    audio["date"] = str(yt.publish_date.year)
+    audio["genre"] = "YouTube"
+    audio["album"] = yt.title
+
+    # Save audio with metadata
+    audio_filename = f"{yt.title}.mp3"
+    audio_path = os.path.join(".", audio_filename)
+    audio_data.seek(0)
+    with open(audio_path, "wb") as f:
+        f.write(audio_data.read())
+    audio.save(audio_path)
+    return audio_path
+
+# Function to create video file with thumbnail as cover
+def create_video_with_thumbnail(yt, video_data, thumbnail_img):
+    video_filename = f"{yt.title}.mp4"
+    video_path = os.path.join(".", video_filename)
+    video_data.seek(0)
+    with open(video_path, "wb") as f:
+        f.write(video_data.read())
+
+    # Embed thumbnail as cover
+    yt_thumbnail = yt.thumbnail_url
+    video = VideoFileClip(video_path)
+    video = video.set_duration(yt.length)
+    video = video.set_audio(VideoFileClip(video_path).audio)
+    video = video.set_thumbnail(yt_thumbnail)
+    video.write_videofile(video_path)
+    return video_path
+
 # Check if a URL is provided
 if url:
     with st.spinner("Fetching video information..."):
@@ -64,32 +107,29 @@ if url:
         st.subheader("Video Thumbnail:")
         thumbnail = resize_thumbnail(thumbnail_url)
         st.image(thumbnail, use_column_width=True, caption="Video Thumbnail", output_format='JPEG', channels="BGR")
+
         download_format = st.radio("Select Download Format:", ["MP4 (Video)", "MP3 (Audio)"])
         if "MP4" in download_format:
             video_streams = yt.streams.filter(progressive=True, file_extension="mp4").order_by('resolution').desc()
-            stream_options = [f"{stream.resolution} - {stream.mime_type}" for stream in video_streams]
-            selected_stream_option = st.selectbox("Select a video stream to generate a direct download link:", stream_options)
-            if selected_stream_option:
-                selected_stream_index = stream_options.index(selected_stream_option)
-                selected_stream = video_streams[selected_stream_index]
-                video_data = io.BytesIO()
-                selected_stream.stream_to_buffer(video_data)
-                video_data.seek(0)
-                st.download_button(label="Click to Download", key=f"{yt.title}.mp4", data=video_data, file_name=f"{yt.title}.mp4")
-        else:
-            audio_streams = yt.streams.filter(only_audio=True, file_extension='mp4')
+            selected_video_stream = video_streams[0]
+            video_data = io.BytesIO()
+            selected_video_stream.stream_to_buffer(video_data)
 
-            # Generate audio quality choices dynamically
-            audio_quality_choices = [f"{audio_stream.abr.replace('kbps', '')}kbps" for audio_stream in audio_streams]
-            audio_quality = st.selectbox("Select audio quality:", audio_quality_choices)
-            selected_audio_stream = next((audio_stream for audio_stream in audio_streams if audio_quality in audio_stream.abr), None)
-            if selected_audio_stream:
+            # Create video file with thumbnail as cover
+            video_path = create_video_with_thumbnail(yt, video_data, thumbnail)
+            st.video(video_path)
+        else:
+            if audio_streams:
+                selected_audio_stream = audio_streams[0]  # Get the first stream with desired audio quality
                 audio_data = io.BytesIO()
                 selected_audio_stream.stream_to_buffer(audio_data)
-                audio_data.seek(0)
-                st.download_button(label="Click to Download", key=f"{yt.title}.mp3", data=audio_data, file_name=f"{yt.title}.mp3")
+
+                # Create audio file with metadata
+                audio_path = create_audio_with_metadata(yt, thumbnail, audio_data)
+                st.audio(audio_path, format='audio/mp3', start_time=0, key=f"{yt.title}.mp3")
+
             else:
-                st.warning("No audio stream available for the selected quality.")
+                st.warning(f"No {desired_audio_quality} audio stream available.")
 
 # Contact developer
 email = "shubhamgupta15m@gmail.com"
