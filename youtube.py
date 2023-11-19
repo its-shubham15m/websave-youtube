@@ -77,17 +77,22 @@ if url:
                 video_data.seek(0)
                 st.download_button(label="Click to Download", key=f"{yt.title}.mp4", data=video_data, file_name=f"{yt.title}.mp4")
         else:
-            audio_streams = yt.streams.filter(only_audio=True, file_extension='mp4')
+            audio_streams = yt.streams.filter(only_audio=True)
+
+            # Arrange audio streams in descending order by bitrate
+            audio_streams = sorted(audio_streams, key=lambda x: int(x.abr.replace('kbps', '')), reverse=True)
 
             # Generate audio quality choices dynamically
             audio_quality_choices = [f"{audio_stream.abr.replace('kbps', '')}kbps" for audio_stream in audio_streams]
             audio_quality = st.selectbox("Select audio quality:", audio_quality_choices)
-            selected_audio_stream = next((audio_stream for audio_stream in audio_streams if audio_quality in audio_stream.abr), None)
+            selected_audio_stream = next(
+                (audio_stream for audio_stream in audio_streams if audio_quality in audio_stream.abr), None)
             if selected_audio_stream:
                 audio_data = io.BytesIO()
                 selected_audio_stream.stream_to_buffer(audio_data)
                 audio_data.seek(0)
-                st.download_button(label="Click to Download", key=f"{yt.title}.mp3", data=audio_data, file_name=f"{yt.title}.mp3")
+                st.download_button(label="Click to Download", key=f"{yt.title}.mp3", data=audio_data,
+                                   file_name=f"{yt.title}.mp3")
             else:
                 st.warning("No audio stream available for the selected quality.")
 
