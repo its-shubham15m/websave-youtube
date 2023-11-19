@@ -66,16 +66,19 @@ if url:
         st.image(thumbnail, use_column_width=True, caption="Video Thumbnail", output_format='JPEG', channels="BGR")
         download_format = st.radio("Select Download Format:", ["MP4 (Video)", "MP3 (Audio)"])
         if "MP4" in download_format:
-            video_streams = yt.streams.filter(progressive=True, file_extension="mp4").order_by('resolution').desc()
+            video_streams = yt.streams.filter(progressive=True)
+            video_streams = sorted(video_streams, key=lambda x: int(x.resolution.split('p')[0]), reverse=True)
             stream_options = [f"{stream.resolution} - {stream.mime_type}" for stream in video_streams]
-            selected_stream_option = st.selectbox("Select a video stream to generate a direct download link:", stream_options)
+            selected_stream_option = st.selectbox("Select a video stream to generate a direct download link:",
+                                                  stream_options)
             if selected_stream_option:
                 selected_stream_index = stream_options.index(selected_stream_option)
                 selected_stream = video_streams[selected_stream_index]
                 video_data = io.BytesIO()
                 selected_stream.stream_to_buffer(video_data)
                 video_data.seek(0)
-                st.download_button(label="Click to Download", key=f"{yt.title}.mp4", data=video_data, file_name=f"{yt.title}.mp4")
+                st.download_button(label="Click to Download", key=f"{yt.title}.{selected_stream.subtype}",
+                                   data=video_data, file_name=f"{yt.title}.{selected_stream.subtype}")
         else:
             audio_streams = yt.streams.filter(only_audio=True)
 
